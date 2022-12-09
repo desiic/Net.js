@@ -16,6 +16,7 @@ const loge = console.error;
 class base_server {
     Cwd             = process.cwd();
     Env_Name        = null;
+    Config          = null;
     port            = null;
     Http_Server     = null;
     Http2_Server    = null; // Unused, Chromium-based accepts HTTP2 secure only?
@@ -41,14 +42,19 @@ class base_server {
     async process_request(Req,Res,Handler_File){
         log("Handler file:",Handler_File);
         try{
-            var Handler = (await import(Handler_File)).default;
+            const Handler_Class = (await import(Handler_File)).default;
+            var   Handler       = new Handler_Class();
         }
         catch(Err){
+            log(Err);
             log(`No handler for ${Req.method} ${Req.url}`);
             Res.end(`No handler for ${Req.method} ${Req.url}`);
             return;
         }
         
+        if (Req.method=="OPTIONS")
+            Handler.handle_cors(Req,Res);
+        else
         if (Req.method=="GET")
             Handler.handle_get(Req,Res);
         else
@@ -58,6 +64,13 @@ class base_server {
             log(`Method ${Req.method} is not supported.`);
             Res.end();
         }
+    }
+
+    /**
+     * Send favicon.ico
+     */ 
+    send_favicon(Req,Res){
+        Res.end();
     }
 
     /**
@@ -71,6 +84,12 @@ class base_server {
         // Root
         if (Path.trim()=="/"){
             this.process_request(Req,Res, `${this.Cwd}/${this.Handlers_Dir}/root.mjs`);
+            return;
+        }
+
+        // Favicon
+        if (Path.trim().toLowerCase()=="/favicon.ico"){
+            this.send_favicon(Req,Res);
             return;
         }
 
@@ -98,6 +117,7 @@ class base_server {
         var Json        = await fs.promises.readFile(Config_Path);
         var Config      = JSON.parse(Json);
         log("Config:",JSON.stringify(Config,null,4));
+        this.Config = Config;
 
         // Set port
         this.port = Config.Ports[this.Env_Name];
