@@ -51,6 +51,7 @@ class base_server {
             Res.end(`No handler for ${Req.method} ${Req.url}`);
             return;
         }
+        Handler.Server = this;
         
         if (Req.method=="OPTIONS")
             Handler.handle_cors(Req,Res);
