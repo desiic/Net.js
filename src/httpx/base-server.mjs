@@ -42,7 +42,7 @@ class base_server {
     async process_request(Req,Res,Handler_File){
         log("Handler file:",Handler_File);
         try{
-            const Handler_Class = (await import(Handler_File)).default;
+            const Handler_Class = (await import(/*webpackIgnore:true*/Handler_File)).default;
             var   Handler       = new Handler_Class();
         }
         catch(Err){
